@@ -128,6 +128,24 @@ func (s *S) TestAddBackendOpts(c *check.C) {
 	})
 }
 
+func (s *S) TestAddBackendOptsMultiCluster(c *check.C) {
+	s.testRouter.isMultiCluster = true
+	app := routertest.FakeApp{
+		Name:      "new-backend",
+		Pool:      "mypool",
+		TeamOwner: "owner",
+		Teams:     []string{"team1", "team2"},
+	}
+	err := s.testRouter.AddBackendOpts(app, map[string]string{"opt1": "val1"})
+	c.Assert(err, check.IsNil)
+	c.Assert(s.apiRouter.backends["new-backend"].opts, check.DeepEquals, map[string]interface{}{
+		"opt1":                   "val1",
+		"tsuru.io/app-pool":      "mypool",
+		"tsuru.io/app-teamowner": "owner",
+		"tsuru.io/app-teams":     []interface{}{"team1", "team2"},
+	})
+}
+
 func (s *S) TestUpdateBackendOpts(c *check.C) {
 	app := routertest.FakeApp{
 		Name:      "new-backend",
@@ -414,7 +432,7 @@ func (s *S) TestCreateCustomHeaders(c *check.C) {
 	_, code, err := r.(*struct {
 		router.Router
 		router.OptsRouter
-	}).Router.(*apiRouter).do(http.MethodGet, "/custom", nil)
+	}).Router.(*apiRouter).do(http.MethodGet, "/custom", nil, nil)
 	c.Assert(code, check.DeepEquals, http.StatusOK)
 	c.Assert(err, check.IsNil)
 }
